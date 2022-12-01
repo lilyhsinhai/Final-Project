@@ -4,6 +4,7 @@ let lines = true;
 let coloredBackground = true;
 let fold1, fold2, fold3, fold4, fold5 = 0;
 const GAP = 0.02;
+const LENGTH = 100;
 
 function setup() {
   createCanvas(windowWidth, windowHeight, WEBGL);
@@ -16,7 +17,9 @@ function setup() {
 function draw() {
   setScene();
   makeFolds();
+  drawBase();
   drawPaper();
+  
 }
 
 function setScene() {
@@ -53,64 +56,73 @@ function setScene() {
 }
 
 function makeFolds() {
-  fold1 = map(laggymouse.x, width / 8, 3 * width / 8, 0, -PI);
-  fold1 = constrain(fold1, -PI + GAP, 0);
-  fold2 = map(laggymouse.x, 3 * width / 8, width / 2, 0, -PI);
-  fold2 = constrain(fold2, -PI + GAP, 0);
-  fold3 = map(laggymouse.x, width / 2, 5 * width / 8, 0, -PI);
-  fold3 = constrain(fold3, -PI + GAP, 0);
-  fold4 = map(laggymouse.x, 5 * width / 8, 3 * width / 4, 0, -PI);
-  fold4 = constrain(fold4, -PI + GAP, 0);
-  fold5 = map(laggymouse.x, 3 * width / 4, 7 * width / 8, 0, -PI);
-  fold5 = constrain(fold5, -PI + GAP, 0);
+  fold1 = map(laggymouse.x, width / 8, 7 * width / 8, 0, -PI);
+  fold1 = constrain(fold1, -PI + GAP, -GAP);
 }
 
 function drawPaper() {
-  drawBase();
   for (let ang = 0; ang < TWO_PI; ang += HALF_PI) {
-  // for (let ang = 0; ang < TWO_PI; ang += TWO_PI) {
     push();
     rotateZ(ang);
-    foldSides(ang);
+    drawQuarter(ang);
     pop();
   }
 }
 
 function drawBase() {
   push(); //base square
-  push();
-  translate(-50,-50,0);
-  sphere(2);
-  pop();
-  beginShape();
-  vertex(-50, -50, 0);
-  vertex(-50, 50, 0);
-  vertex(50, 50, 0);
-  vertex(50, -50, 0);
-  endShape();
+  plane(LENGTH, LENGTH, 2, 2);
   pop();
 }
 
-function foldSides(ang) {
-  push();
-  rotateY(fold1 / 2);
-  rotateX(fold1 / 4);
-  beginShape();
-  vertex(0, 0, 0);
-  vertex(50, 50, 0);
-  vertex(50, 0, 0);
-  endShape();
-  pop();
+class Triangle{
 
-  push(); 
-  rotateX(fold1 / -2);
-  rotateY(fold1 / -4);
-  beginShape();
-  vertex(0, 0, 0);
-  vertex(50, 50, 0);
-  vertex(0, 50, 0);
-  endShape();
-  pop();  
+  constructor(x2, y2, x3, y3){
+
+    this.x2_ = x2;
+    this.y2_ = y2;
+    this.x3_ = x3;
+    this.y3_ = y3;
+    
+  }
+
+  display(x1, y, x2){
+    push();
+    rotateX(x1);
+    rotateY(y);
+    rotateX(x2);
+    scale(LENGTH/2);
+    triangle(1, 1, this.x2_, this.y2_, this.x3_, this.y3_);
+    pop();
+  }
+}
+
+function drawQuarter(ang) {
+  
+  var triangleA = new Triangle(0, 0, 1, 0);
+  triangleA.display(0, fold1/2, fold1/4);
+
+  var triangleB = new Triangle(0, 0, 0, 1);
+  triangleB.display(fold1/-2, fold1/-4, 0);
+
+  var triangleC = new Triangle(0, 2, 0, 1);
+  triangleC.display(0, 0, 0);
+
+  var triangleD = new Triangle(0, 2, 1, 2);
+  triangleD.display(0, 0, 0);
+
+  var triangleE = new Triangle(2, 2, 1, 2);
+  triangleE.display(0, 0, 0);
+
+  var triangleF = new Triangle(2, 2, 2, 1);
+  triangleF.display(0, 0, 0);
+
+  var triangleG = new Triangle(2, 0, 2, 1);
+  triangleG.display(0, 0, 0);
+
+  var triangleH = new Triangle(2, 0, 1, 0);
+  triangleH.display(0, 0, 0);
+
 }
 
 function randomColor() {
