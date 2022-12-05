@@ -2,9 +2,11 @@ let mouse, laggymouse;
 let hue, targetHue;
 let lines = true;
 let coloredBackground = true;
-let debug = true;
+let debug = false;
 let corners = false;
-let fold1, fold2;
+let showOrigins = false;
+let tri = false;
+let fold1, fold2, fold3, fold4;
 
 const GAP = 0.02;
 const LENGTH = 100;
@@ -22,7 +24,7 @@ function setup() {
 function draw() {
   setScene();
   calculateFolds();
-  drawBase();
+  // drawBase();
   drawPaper();
 }
 
@@ -62,9 +64,10 @@ function setScene() {
 
 
 function calculateFolds() {
-  fold1 = foldFrom(1, 3, 8); // fold 1 happens when mouseX > 1/8 and < 3/8 on the screen
-  fold2 = foldFrom(3, 5, 8); // fold 2 happens when mouseX > 3/8 and < 5/8 on the screen
-  fold3 = foldFrom(5, 7, 8); // fold 3 happens when mouseX > 5/8 and < 7/8 on the screen
+  fold1 = foldFrom(1, 3, 8); // fold 1 happens when mouseX > 1/8 and < 3/8 of the screen
+  fold2 = foldFrom(3, 5, 8); // fold 2 happens when mouseX > 3/8 and < 5/8 of the screen
+  fold3 = foldFrom(5, 7, 8); // fold 3 happens when mouseX > 5/8 and < 7/8 of the screen
+  fold4 = foldFrom(7, 8, 8); // fold 4 happens when mouseX > 7/8 of the screen
 }
 
 
@@ -85,7 +88,7 @@ function drawPaper() {
       rotateZ(ang);
       drawQuarter(ang);
       pop();
-    }    
+    }
   }
 }
 
@@ -97,9 +100,9 @@ function drawBase() {
 }
 
 
-class Triangle{
+class Triangle {
 
-  constructor(x2, y2, x3, y3){
+  constructor(x2, y2, x3, y3) {
     this.x1_ = 1;
     this.y1_ = 1;
     this.x2_ = x2;
@@ -110,31 +113,16 @@ class Triangle{
     this.folds_ = [];
   }
 
-  display(){
+  display() {
     push();
-    scale(LENGTH/2);
+    scale(LENGTH / 2);
 
-    for(var fold of this.folds_) {
-      translate(fold.origin_.x, fold.origin_.y);
-      rotateX(fold.rotations_.x || 0);
-      rotateY(fold.rotations_.y || 0);
-      rotateZ(fold.rotations_.z || 0);
-
-      rotateX(fold.folds_.x || 0);
-      rotateY(fold.folds_.y || 0);
-      rotateZ(fold.folds_.z || 0);
-      rotateX(fold.folds_.x2 || 0);
-      rotateY(fold.folds_.y2 || 0);
-      rotateZ(fold.folds_.z2 || 0);
-
-      rotateZ(-fold.rotations_.z || 0);
-      rotateY(-fold.rotations_.y || 0);
-      rotateX(-fold.rotations_.x || 0);
-      translate(-fold.origin_.x, -fold.origin_.y)
+    for (var fold of this.folds_) {
+      fold.perform();
     }
-    
+
     triangle(this.x1_, this.y1_, this.x2_, this.y2_, this.x3_, this.y3_);
-    
+
     if (corners) { // debugging
       push();
       translate(this.x1_, this.y1_);
@@ -152,17 +140,38 @@ class Triangle{
     pop();
   }
 
-  addFold(fold){
+  addFold(fold) {
     this.folds_.push(fold);
   }
 }
-
 
 class Fold {
   constructor(origin, rotations, folds) {
     this.origin_ = origin;
     this.rotations_ = rotations;
     this.folds_ = folds;
+  }
+
+  perform() {
+    translate(this.origin_.x, this.origin_.y, this.origin_.z);
+    if (showOrigins) {
+      sphere(0.02);
+    }
+    rotateX(this.rotations_.x || 0);
+    rotateY(this.rotations_.y || 0);
+    rotateZ(this.rotations_.z || 0);
+
+    rotateX(this.folds_.x || 0);
+    rotateY(this.folds_.y || 0);
+    rotateZ(this.folds_.z || 0);
+    rotateX(this.folds_.x2 || 0);
+    rotateY(this.folds_.y2 || 0);
+    rotateZ(this.folds_.z2 || 0);
+
+    rotateZ(-this.rotations_.z || 0);
+    rotateY(-this.rotations_.y || 0);
+    rotateX(-this.rotations_.x || 0);
+    translate(-this.origin_.x, -this.origin_.y, -this.origin_.z)
   }
 }
 
@@ -181,47 +190,81 @@ function drawQuarter() {
   triangles.push(triangleA, triangleB, triangleC, triangleD, triangleE, triangleF, triangleG, triangleH);
 
   //Fold 1
-  triangleD.addFold(new Fold({x: 1, y: 1}, {z: PI/-4}, {x: fold1}));
-  triangleE.addFold(new Fold({x: 1, y: 1}, {z: PI/-4}, {x: fold1}));
-  triangleF.addFold(new Fold({x: 1, y: 1}, {z: PI/-4}, {x: fold1}));
-  triangleG.addFold(new Fold({x: 1, y: 1}, {z: PI/-4}, {x: fold1}));
+  triangleD.addFold(new Fold({ x: 1, y: 1 }, { z: PI / -4 }, { x: fold1 }));
+  triangleE.addFold(new Fold({ x: 1, y: 1 }, { z: PI / -4 }, { x: fold1 }));
+  triangleF.addFold(new Fold({ x: 1, y: 1 }, { z: PI / -4 }, { x: fold1 }));
+  triangleG.addFold(new Fold({ x: 1, y: 1 }, { z: PI / -4 }, { x: fold1 }));
 
   // Fold 2a
-  triangleH.addFold(new Fold({x: 1, y: 0}, {}, {y: fold2}));
-  triangleG.addFold(new Fold({x: 0, y: 1}, {}, {x: -fold2}));
-  
+  triangleH.addFold(new Fold({ x: 1, y: 0 }, {}, { y: fold2 }));
+  triangleG.addFold(new Fold({ x: 0, y: 1 }, {}, { x: -fold2 }));
+
   // Fold 2b
-  triangleC.addFold(new Fold({x: 0, y: 1}, {}, {x: -fold2}));
-  triangleD.addFold(new Fold({x: 1, y: 0}, {}, {y: fold2}));
+  triangleC.addFold(new Fold({ x: 0, y: 1 }, {}, { x: -fold2 }));
+  triangleD.addFold(new Fold({ x: 1, y: 0 }, {}, { y: fold2 }));
 
+  var fold3ZFactor = tan(fold3 / -4);
 
-  // Fold 3a
-  // triangles a, g, h
-  // where 0, 0
-  // how Y +half X +quarter
-
-  var factor = tan(fold3/-4);
-  // console.log(factor);
-  triangleA.addFold(new Fold({x: 0, y: 0}, {}, {x: fold3/-2, z: fold3/-4 * factor}));
+  // Fold 3a - triangles a, g, h
+  triangleA.addFold(new Fold({ x: 0, y: 0 }, {}, { x: fold3 / -2, z: fold3 / -4 * fold3ZFactor}));
+  triangleG.addFold(new Fold({ x: 2, y: 0 }, {}, { y: fold3 / -2, z: fold3 / -4 * fold3ZFactor}));
+  triangleH.addFold(new Fold({ x: 2, y: 0 }, {}, { x: fold3 / 2, z: fold3 / 4 * fold3ZFactor})); 
   
-  // Fold 3b
-  // triangles b, c, d
-  // where 0, 0
-  // how X +half Y +quarter
+  // Fold 3b - triangles b, c, d
+  triangleB.addFold(new Fold({ x: 0, y: 0 }, {}, { y: fold3 / 2, z: fold3 / 4 * fold3ZFactor}));
+  triangleD.addFold(new Fold({ x: 0, y: 2 }, {}, { x: fold3 / 2, z: fold3 / 4 * fold3ZFactor}));
+  triangleC.addFold(new Fold({ x: 0, y: 2 }, {}, { y: fold3 / -2, z: fold3 / -4 * fold3ZFactor}));
+  
+  // Fold 3c - triangles e, f
+  // where ? - how ?
 
-  triangleB.addFold(new Fold({x: 0, y: 0}, {}, {y: fold3/2, z:fold3/4 * factor}));
+  // triangleE.addFold(new Fold({ x: 1.5, y: 1.5 , z:-0.5}, {}, { x: fold3/2, y: fold3 / 2, zXXX: fold3 / 4 * fold3ZFactor}));
+ 
 
-  // Fold 3c
-  // triangles e, f
-  // where ?
-  // how ?
+  //fold just like c folds in 3b
+  triangleE.addFold(new Fold({ x: 2, y: 2 }, {}, { x: fold3 / -2, z: fold3 / -4 * fold3ZFactor}));
+  triangleE.addFold(new Fold({ x: 1, y: 1}, {z: PI / -2}, {x: fold3 * -0.61}));
+  
+  //fold just like h folds in 3a
+  triangleF.addFold(new Fold({ x: 2, y: 2 }, {}, { y: fold3 / 2, z: fold3 / 4 * fold3ZFactor}));
+  triangleF.addFold(new Fold({ x: 1, y: 1}, {z: PI / 2}, {y: fold3 * 0.61}));
 
+  console.log(fold4);
+  
 
-  // triangleA.display();
-  // triangleB.display();
+  // triangleF.display(); 
   triangles.forEach(t => t.display());
-    
+
+  if (tri) {
+    drawEandF();
+  }
 }
+
+function drawEandF() {
+  // s = sqrt(2) ~= 1.4
+  // sphere corner moves (1, 1, 0) => (0, 0, s)
+  // triangle corner (right angle) (0, 1, 0) =>  (0, s/2, s/2)
+  // cube corner (0,0,0) => ??? (s*2/3, s*2/3, s*2/3) 
+
+    push();
+    stroke(255, 150);
+    scale(LENGTH / 2);
+    let s = sqrt(2);
+
+    beginShape();
+    vertex(0, 0, s);
+    vertex(0, s/2, s/2);
+    vertex(s*2/3, s*2/3, s*2/3);
+    endShape();
+
+    beginShape();
+    vertex(0, 0, s);
+    vertex(s/2, 0, s/2);
+    vertex(s*2/3, s*2/3, s*2/3);
+    endShape();
+    pop();  
+}
+
 
 
 function randomColor() {
@@ -246,5 +289,11 @@ function keyPressed() {
   }
   if (key == 'd') {
     debug = !debug;
+  }
+  if (key == 'o') {
+    showOrigins = !showOrigins;
+  }
+  if (key == 't') {
+    tri = !tri;
   }
 }
