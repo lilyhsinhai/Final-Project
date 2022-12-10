@@ -1,6 +1,6 @@
 let mouse, laggymouse;
 let hue, targetHue;
-let lines = true;
+let lines = false;
 let coloredBackground = true;
 let debug = false;
 let corners = false;
@@ -8,6 +8,11 @@ let showOrigins = false;
 let tri = false;
 let fold1, fold2, fold3, fold4;
 let foldingMode = false;
+let open = false;
+let merriweather;
+let img;
+
+var animationPoint = 0;
 
 const outerOptions = ["red", "blue", "green", "yellow"];
 let outerChoice = "";
@@ -15,10 +20,15 @@ let outerChoice = "";
 const innerOptions = ["fox", "sheep", "cow", "chicken", "octopus", "frog", "rabbit", "cat"];
 let innerChoice = "";
 
+const textColors = {};
 
 const GAP = 0.02;
 const LENGTH = 100;
 
+function preload() {
+    merriweather = loadFont('fonts/Merriweather-Regular.ttf');
+    img = loadImage('textures/paper.jpg');
+}
 
 function setup() {
   createCanvas(windowWidth, windowHeight, WEBGL);
@@ -26,7 +36,10 @@ function setup() {
   laggymouse = createVector(0, 1.5 * height);
   hue = color('black');
   targetHue = randomColor();
-
+  textColors["red"] = color(224, 0, 30);
+  textColors["blue"] = color(84, 105, 255);
+  textColors["green"] = color(27, 181, 0);
+  textColors["yellow"] = color(255, 214, 0);
 }
 
 
@@ -68,7 +81,7 @@ function setScene() {
   hue = lerpColor(hue, targetHue, 0.05); //catch up to target hue
   background(coloredBackground ? hue : 0);
   
-  ambientLight(100);
+  ambientLight(200);
   pointLight(150, 150, 150, width, -height, -height / 2);
 
   if (lines) {
@@ -82,19 +95,43 @@ function setScene() {
 function play() {
   fold1 = -PI + GAP;
   fold2 = -PI + GAP;
-  // fold3 = -PI + GAP;
-
-  // catcher stops folding/unfolding and stays in its last position
-  // the rotation stays
-
-  var animationPoint = frameCount % 100;
-  if (animationPoint < 50) {
-    fold3 = map(animationPoint, 0, 50, -2.35, -PI + GAP);
-  } else {
-    fold3 = map(animationPoint, 50, 99, -PI + GAP, -2.35);    
+  if(open == false){
+    fold3 = -PI + GAP;
+  }else{
+    fold3 = -2.35;
   }
 
-  if (outerChoice != "" && innerChoice == "" && mouseIsPressed){
+  // making the first choice
+  if(outerChoice == "" && mouseIsPressed){
+    var selection; // 0 - 3, clockwise from lower right
+    if(mouseX > width/2 && mouseY > height/2){ // lower right
+      selection = 0;
+    }
+    if(mouseX < width/2 && mouseY > height/2){ // lower left
+      selection = 1;
+    }
+    if(mouseX < width/2 && mouseY < height/2){ // upper left
+      selection = 2;
+    }
+    if(mouseX > width/2 && mouseY < height/2){ // upper right
+      selection = 3;
+    }
+
+    outerChoice = outerOptions[selection];
+    console.log("outerChoice:", outerChoice, "from Selection:", selection);
+  }  
+
+  // after first choice, catcher opens and stops
+  if (outerChoice != "" && open == false){
+      fold3 = map(animationPoint, 0, 50, -PI + GAP, -2.35);
+      animationPoint += 1;
+    if(animationPoint >= 50){
+      open = true;
+    }   
+  }
+  
+  // mouseIsPressed selects an inner choice
+  if (open == true && innerChoice == "" && mouseIsPressed){
     let v = createVector(mouseX - width/2, mouseY - height/2);
     let heading = v.heading();
     let selection = int(map(heading, -PI, PI, 0, 8));
@@ -102,29 +139,14 @@ function play() {
     
     innerChoice = innerOptions[selection];
     console.log("innerChoice:", innerChoice, "from Selection:", selection);
-
   }
 
-  if(outerChoice == "" && mouseIsPressed){
-    var selection; // 1 - 4, clockwise from upper left
-    if(mouseX < width/2 && mouseY < height/2){
-      selection = 1;
-    }
-    if(mouseX > width/2 && mouseY < height/2){
-      selection = 2;
-    }
-    if(mouseX > width/2 && mouseY > height/2){
-      selection = 3;
-    }
-    if(mouseX < width/2 && mouseY > height/2){
-      selection =4;
-    }
-
-    outerChoice = outerOptions[selection - 1];
-    console.log("outerChoice:", outerChoice, "from Selection:", selection);
-  }  
-
-  // stage 1 user picks an outer choice
+ // if (innerChoice != "" && something == false) {
+    // do the second stuff
+  
+  
+  
+  // stage 1 user picks   an outer choice
     // user chooses direction to count
     // counts along the inside options
   
@@ -154,12 +176,12 @@ function foldFrom(start, end, parts) {
 
 function drawPaper() {
   if (debug) {
-    drawQuarter(0);
+    drawQuarter(outerOptions[0], innerOptions[0], innerOptions[1]);
   } else {
-    for (let ang = 0; ang < TWO_PI; ang += HALF_PI) {
+    for (let i = 0; i <= 3; i++) {
       push();
-      rotateZ(ang);
-      drawQuarter(ang);
+      rotateZ(i * HALF_PI);
+      drawQuarter(outerOptions[i], innerOptions[i*2], innerOptions[i*2 + 1]);
       pop();
     }
   }
@@ -175,13 +197,15 @@ function drawBase() {
 
 class Triangle {
 
-  constructor(x2, y2, x3, y3) {
+  constructor(x2, y2, x3, y3, text, textRotation) {
     this.x1_ = 1;
     this.y1_ = 1;
     this.x2_ = x2;
     this.y2_ = y2;
     this.x3_ = x3;
     this.y3_ = y3;
+    this.text_ = text || "";
+    this.textRotation_ = textRotation || 0;
 
     this.folds_ = [];
   }
@@ -196,6 +220,17 @@ class Triangle {
 
     triangle(this.x1_, this.y1_, this.x2_, this.y2_, this.x3_, this.y3_);
 
+    push();
+    // translate(this.x3_, this.y3_);
+    translate((this.x1_ + this.x2_ + this.x3_)/3, (this.y1_ + this.y2_ + this.y3_)/3, GAP);
+    rotateZ(this.textRotation_);
+    textFont(merriweather);
+    textSize(0.2);
+    var textColor = textColors[this.text_] || color(30); // outside colors are assigned, inside is all black
+    fill(textColor);
+    text(this.text_, -0.3, 0.1, GAP);
+    pop();
+    
     if (corners) { // debugging
       push();
       translate(this.x1_, this.y1_);
@@ -256,16 +291,17 @@ class Fold {
   }
 }
 
-function drawQuarter() {
+function drawQuarter(outerOption, innerOptionA, innerOptionB) {
   var triangles = [];
   // draw triangles
+  texture(img);
   var triangleA = new Triangle(0, 0, 1, 0);
   var triangleB = new Triangle(0, 0, 0, 1);
   var triangleC = new Triangle(0, 2, 0, 1);
-  var triangleD = new Triangle(0, 2, 1, 2);
-  var triangleE = new Triangle(2, 2, 1, 2);
+  var triangleD = new Triangle(0, 2, 1, 2, innerOptionA, QUARTER_PI*3);
+  var triangleE = new Triangle(2, 2, 1, 2, outerOption, -QUARTER_PI*3);
   var triangleF = new Triangle(2, 2, 2, 1);
-  var triangleG = new Triangle(2, 0, 2, 1);
+  var triangleG = new Triangle(2, 0, 2, 1, innerOptionB, QUARTER_PI*3);
   var triangleH = new Triangle(2, 0, 1, 0);
 
   triangles.push(triangleA, triangleB, triangleC, triangleD, triangleE, triangleF, triangleG, triangleH);
@@ -284,7 +320,7 @@ function drawQuarter() {
   triangleC.addFold(new Fold({ x: 0, y: 1 }, {}, { x: -fold2 }));
   triangleD.addFold(new Fold({ x: 1, y: 0 }, {}, { y: fold2 }));
 
-  var fold3ZFactor = tan(fold3 / -4);
+  const fold3ZFactor = tan(fold3 / -4);
 
   // Fold 3a - triangles a, g, h
   triangleA.addFold(new Fold({ x: 0, y: 0 }, {}, { x: fold3 / -2, z: fold3 / -4 * fold3ZFactor }));
@@ -297,19 +333,12 @@ function drawQuarter() {
   triangleC.addFold(new Fold({ x: 0, y: 2 }, {}, { y: fold3 / -2, z: fold3 / -4 * fold3ZFactor }));
   
   // Fold 3c - triangles e, f
-  //fold just like c folds in 3b
   triangleE.addFold(new Fold({ x: 2, y: 2 }, {}, { x: fold3 / -2, z: fold3 / -4 * fold3ZFactor }));
   triangleE.addFold(new Fold({ x: 1, y: 1}, {z: PI / -2}, {x: fold3 * -0.61 }));
   
-  //fold just like h folds in 3a
   triangleF.addFold(new Fold({ x: 2, y: 2 }, {}, { y: fold3 / 2, z: fold3 / 4 * fold3ZFactor }));
   triangleF.addFold(new Fold({ x: 1, y: 1}, { z: PI / 2}, {y: fold3 * 0.61 }));  
 
-  //Fold 4 - half open
-  
-
-  
-  // triangleF.display(); 
   triangles.forEach(t => t.display());
 
   if (tri) {
