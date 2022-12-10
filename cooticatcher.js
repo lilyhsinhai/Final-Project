@@ -7,6 +7,14 @@ let corners = false;
 let showOrigins = false;
 let tri = false;
 let fold1, fold2, fold3, fold4;
+let foldingMode = false;
+
+const outerOptions = ["red", "blue", "green", "yellow"];
+let outerChoice = "";
+
+const innerOptions = ["fox", "sheep", "cow", "chicken", "octopus", "frog", "rabbit", "cat"];
+let innerChoice = "";
+
 
 const GAP = 0.02;
 const LENGTH = 100;
@@ -18,41 +26,50 @@ function setup() {
   laggymouse = createVector(0, 1.5 * height);
   hue = color('black');
   targetHue = randomColor();
+
 }
 
 
 function draw() {
   setScene();
-  calculateFolds();
-  // drawBase();
+  if (foldingMode == true){
+    calculateFolds();
+  }else{
+    play();
+  }
   drawPaper();
 }
 
 
 function setScene() {
-  mouse.x = mouseX;
-  mouse.y = mouseY;
-  laggymouse.lerp(mouse, 0.02); //catch up to mouse
-
-
-  let x = map(laggymouse.y, 0, height, HALF_PI, -HALF_PI);
-  x = debug ? 0 : x;
-  rotateX(x + QUARTER_PI); //mouseY rotates around x axis
-
-  let z = map(laggymouse.x, 0, width, HALF_PI, -HALF_PI);
-  z = debug ? 0 : z;
-  rotateZ(z); //mouseX spins shape
-
-  let zoom = map(laggymouse.y, 0, height, 3 * height / 566, 0.5 * height / 566);
-  zoom = debug ? 5 : zoom;
-  scale(zoom); //zoom in and out based on mouseY
+  if(foldingMode){
+    mouse.x = mouseX;
+    mouse.y = mouseY;
+    laggymouse.lerp(mouse, 0.02); //catch up to mouse
+    
+    let x = map(laggymouse.y, 0, height, HALF_PI, -HALF_PI);
+    x = debug ? 0 : x;
+    rotateX(x + QUARTER_PI); //mouseY rotates around x axis
+    
+    let z = map(laggymouse.x, 0, width, HALF_PI, -HALF_PI);
+    z = debug ? 0 : z;
+    rotateZ(z); //mouseX spins shape
+    
+    let zoom = map(laggymouse.y, 0, height, 3 * height / 566, 0.5 * height / 566);
+    zoom = debug ? 5 : zoom;
+    scale(zoom); //zoom in and out based on mouseY
+  }else{
+    //rotateX(PI/20);
+    rotateX(0);
+    //rotateZ(PI/8);
+    scale(4);
+  }
 
   hue = lerpColor(hue, targetHue, 0.05); //catch up to target hue
   background(coloredBackground ? hue : 0);
-
+  
   ambientLight(100);
   pointLight(150, 150, 150, width, -height, -height / 2);
-
 
   if (lines) {
     stroke(255, 150);
@@ -60,6 +77,62 @@ function setScene() {
     noStroke();
   }
   specularMaterial(hue);
+}
+
+function play() {
+  fold1 = -PI + GAP;
+  fold2 = -PI + GAP;
+  // fold3 = -PI + GAP;
+
+  // catcher stops folding/unfolding and stays in its last position
+  // the rotation stays
+
+  var animationPoint = frameCount % 100;
+  if (animationPoint < 50) {
+    fold3 = map(animationPoint, 0, 50, -2.35, -PI + GAP);
+  } else {
+    fold3 = map(animationPoint, 50, 99, -PI + GAP, -2.35);    
+  }
+
+  if (outerChoice != "" && innerChoice == "" && mouseIsPressed){
+    let v = createVector(mouseX - width/2, mouseY - height/2);
+    let heading = v.heading();
+    let selection = int(map(heading, -PI, PI, 0, 8));
+
+    
+    innerChoice = innerOptions[selection];
+    console.log("innerChoice:", innerChoice, "from Selection:", selection);
+
+  }
+
+  if(outerChoice == "" && mouseIsPressed){
+    var selection; // 1 - 4, clockwise from upper left
+    if(mouseX < width/2 && mouseY < height/2){
+      selection = 1;
+    }
+    if(mouseX > width/2 && mouseY < height/2){
+      selection = 2;
+    }
+    if(mouseX > width/2 && mouseY > height/2){
+      selection = 3;
+    }
+    if(mouseX < width/2 && mouseY > height/2){
+      selection =4;
+    }
+
+    outerChoice = outerOptions[selection - 1];
+    console.log("outerChoice:", outerChoice, "from Selection:", selection);
+  }  
+
+  // stage 1 user picks an outer choice
+    // user chooses direction to count
+    // counts along the inside options
+  
+  
+  // user can click different triangles and the catcher will flip open in 2 different directions
+  // depending on letter count it flips a certain amount of times
+  // last click the catcher flattens and opens the clicked flap (reversing fold2 for that one)
+  
 }
 
 
@@ -136,6 +209,14 @@ class Triangle {
       translate(this.x3_, this.y3_);
       cone(.02, .02);
       pop();
+
+      //draw Z
+      push();
+      translate((this.x1_ + this.x2_ + this.x3_)/3, (this.y1_ + this.y2_ + this.y3_)/3);
+      rotateX(PI/2);
+      cone(.02, .10);      
+      pop();
+      
     }
     pop();
   }
@@ -206,32 +287,28 @@ function drawQuarter() {
   var fold3ZFactor = tan(fold3 / -4);
 
   // Fold 3a - triangles a, g, h
-  triangleA.addFold(new Fold({ x: 0, y: 0 }, {}, { x: fold3 / -2, z: fold3 / -4 * fold3ZFactor}));
-  triangleG.addFold(new Fold({ x: 2, y: 0 }, {}, { y: fold3 / -2, z: fold3 / -4 * fold3ZFactor}));
-  triangleH.addFold(new Fold({ x: 2, y: 0 }, {}, { x: fold3 / 2, z: fold3 / 4 * fold3ZFactor})); 
+  triangleA.addFold(new Fold({ x: 0, y: 0 }, {}, { x: fold3 / -2, z: fold3 / -4 * fold3ZFactor }));
+  triangleG.addFold(new Fold({ x: 2, y: 0 }, {}, { y: fold3 / -2, z: fold3 / -4 * fold3ZFactor }));
+  triangleH.addFold(new Fold({ x: 2, y: 0 }, {}, { x: fold3 / 2, z: fold3 / 4 * fold3ZFactor })); 
   
   // Fold 3b - triangles b, c, d
-  triangleB.addFold(new Fold({ x: 0, y: 0 }, {}, { y: fold3 / 2, z: fold3 / 4 * fold3ZFactor}));
-  triangleD.addFold(new Fold({ x: 0, y: 2 }, {}, { x: fold3 / 2, z: fold3 / 4 * fold3ZFactor}));
-  triangleC.addFold(new Fold({ x: 0, y: 2 }, {}, { y: fold3 / -2, z: fold3 / -4 * fold3ZFactor}));
+  triangleB.addFold(new Fold({ x: 0, y: 0 }, {}, { y: fold3 / 2, z: fold3 / 4 * fold3ZFactor }));
+  triangleD.addFold(new Fold({ x: 0, y: 2 }, {}, { x: fold3 / 2, z: fold3 / 4 * fold3ZFactor }));
+  triangleC.addFold(new Fold({ x: 0, y: 2 }, {}, { y: fold3 / -2, z: fold3 / -4 * fold3ZFactor }));
   
   // Fold 3c - triangles e, f
-  // where ? - how ?
-
-  // triangleE.addFold(new Fold({ x: 1.5, y: 1.5 , z:-0.5}, {}, { x: fold3/2, y: fold3 / 2, zXXX: fold3 / 4 * fold3ZFactor}));
- 
-
   //fold just like c folds in 3b
-  triangleE.addFold(new Fold({ x: 2, y: 2 }, {}, { x: fold3 / -2, z: fold3 / -4 * fold3ZFactor}));
-  triangleE.addFold(new Fold({ x: 1, y: 1}, {z: PI / -2}, {x: fold3 * -0.61}));
+  triangleE.addFold(new Fold({ x: 2, y: 2 }, {}, { x: fold3 / -2, z: fold3 / -4 * fold3ZFactor }));
+  triangleE.addFold(new Fold({ x: 1, y: 1}, {z: PI / -2}, {x: fold3 * -0.61 }));
   
   //fold just like h folds in 3a
-  triangleF.addFold(new Fold({ x: 2, y: 2 }, {}, { y: fold3 / 2, z: fold3 / 4 * fold3ZFactor}));
-  triangleF.addFold(new Fold({ x: 1, y: 1}, {z: PI / 2}, {y: fold3 * 0.61}));
+  triangleF.addFold(new Fold({ x: 2, y: 2 }, {}, { y: fold3 / 2, z: fold3 / 4 * fold3ZFactor }));
+  triangleF.addFold(new Fold({ x: 1, y: 1}, { z: PI / 2}, {y: fold3 * 0.61 }));  
 
-  console.log(fold4);
+  //Fold 4 - half open
   
 
+  
   // triangleF.display(); 
   triangles.forEach(t => t.display());
 
@@ -278,7 +355,7 @@ function mousePressed() {
 
 
 function keyPressed() {
-  if (keyCode == 32) {
+  if (key == 'l') {
     lines = !lines;
   }
   if (key == 'b') {
@@ -295,5 +372,8 @@ function keyPressed() {
   }
   if (key == 't') {
     tri = !tri;
+  }
+  if (keyCode == 32){
+    foldingMode = !foldingMode;
   }
 }
