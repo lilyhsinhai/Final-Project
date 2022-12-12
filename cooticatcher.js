@@ -1,19 +1,13 @@
-// fix fold 3
-// get arrow to be darker, but still adjust according to hue
-// get it to restart
-// start in folding mode and switch to playing mode once it's folded up
-// add fortunes
-
 let mouse, laggymouse;
 let hue, targetHue;
-let lines = false;
+let lines = true;
 let coloredBackground = true;
 let debug = false;
 let corners = false;
 let showOrigins = false;
 let tri = false;
 let fold1, fold2c, fold2h, fold2reveal, fold3, fold4;
-let foldingMode = false;
+let foldingMode = true;
 let opened = false;
 let merriweather;
 let paper;
@@ -34,13 +28,14 @@ let outerChoice = "";
 const innerOptions = ["fox", "sheep", "cow", "snake", "octopus", "frog", "rabbit", "lizard"];
 let innerChoice = "";
 
-const fortuneOptions = ["death", "love", "fame", "???"];
+const fortuneOptions = ["soon ur gonna have sum pizza so good that the rest of ur life feels anti-climactic", "the man who harrassed u will fall down a storm drain", "u will get an A in this class, congrats babe", "ur mom won't say anything passive aggressive to u over break"];
 let fortuneChoice = "";
 
 const textColors = {};
 
 const GAP = 0.02;
 const LENGTH = 100;
+const PARTIAL_OPEN = -1.5;
 
 function preload() {
   merriweather = loadFont('fonts/Merriweather-Regular.ttf');
@@ -114,7 +109,7 @@ function playGame() {
   if (unfolded == true) { // fold3 undo
     fold3 = GAP
   } else if (opened == true) { // fold3 half-undo
-    fold3 = -2.35;
+    fold3 = PARTIAL_OPEN;
   } else {
     fold3 = -PI + GAP;
   }
@@ -124,9 +119,6 @@ function playGame() {
   fortuneClick();
   fortuneUnfold();
 
-  if(revealed == true){
-    restart();
-  }
 }
 
 function firstClick(){
@@ -151,7 +143,7 @@ function firstClick(){
 
   // after first choice, catcher spins to the selection
   if (outerChoice != "" && opened == false) {
-    fold3 = map(animationPoint, 0, 50, -PI + GAP, -2.35); // fold3 opens halfway
+    fold3 = map(animationPoint, 0, 50, -PI + GAP, PARTIAL_OPEN); // fold3 opens halfway
     var rotations = [
       HALF_PI - QUARTER_PI/2,
       TWO_PI - QUARTER_PI/2,
@@ -262,7 +254,7 @@ function fortuneClick(){
 function fortuneUnfold(){
   // undo fold3 so we can open the fortune flap
   if (lastChoice == true && unfolded == false) {
-    fold3 = map(animationPoint, 0, 100, -2.35, GAP);
+    fold3 = map(animationPoint, 0, 100, PARTIAL_OPEN, GAP);
     animationPoint++;
     if (animationPoint >= 100) {
       unfolded = true;
@@ -293,18 +285,11 @@ function displayText(textToDisplay) {
 }
 
 function displayArrow(){
+  push();
   rectMode(CENTER);
   rect(0, 80, 5, 25);
   triangle(0, 65, -10, 75, 10, 75);
-}
-
-function restart(){
-  ellipse(110, 0, 30, 30);
-  triangle(105, 10, 105, -10, 120, 0);
-  var d = dist(mouseX, mouseY, 110, 0);
-  if(d < 30){
-    // reset catcher
-  }
+  pop();
 }
 
 function calculateFolds() {
@@ -355,7 +340,7 @@ function drawPaper() {
 
 class Triangle {
 
-  constructor(x2, y2, x3, y3, text, textRotation) {
+  constructor(x2, y2, x3, y3, text, textRotation, textSize) {
     this.x1_ = 1;
     this.y1_ = 1;
     this.x2_ = x2;
@@ -364,6 +349,7 @@ class Triangle {
     this.y3_ = y3;
     this.text_ = text || "";
     this.textRotation_ = textRotation || 0;
+    this.textSize_ = textSize || 0.2;
 
     this.folds_ = [];
   }
@@ -383,12 +369,20 @@ class Triangle {
       translate((this.x1_ + this.x2_ + this.x3_) / 3, (this.y1_ + this.y2_ + this.y3_) / 3, GAP);
       rotateZ(this.textRotation_);
       textFont(merriweather);
-      textSize(0.2);
+      textSize(this.textSize_);
       var textColor = textColors[this.text_] || color(0); // outside colors are assigned, inside is all black
       fill(textColor);
-      text(this.text_, -0.3, 0.1, GAP);
+      text(this.text_, -0.3, 0.1, 1);
       pop();
     }
+
+    // if(revealed == true){
+    //   push();
+    //   textFont(merriweather);
+    //   textSize(0.1);
+    //   text(this.text_, -0.3, 0.1, 0.8, 0.8);
+    //   pop();
+    // }
   
 
     if (corners) { // debugging
@@ -458,7 +452,7 @@ function drawQuarter(outerOption, innerOptionA, innerOptionB, fortuneOption) {
     texture(paper);
   }
   if(fortuneOption == fortuneChoice && revealed == true){
-    var triangleA = new Triangle(0, 0, 1, 0, fortuneOption, -HALF_PI);
+    var triangleA = new Triangle(0, 0, 1, 0, fortuneOption, -QUARTER_PI * 3, 0.13);
   } else {
     var triangleA = new Triangle(0, 0, 1, 0);
   }
@@ -570,6 +564,7 @@ function keyPressed() {
   }
   if (keyCode == 32) {
     foldingMode = !foldingMode;
+    lines = !lines;
     opened = counted = unfolded = revealed = lastChoice = false;
     outerChoice = innerChoice = fortuneChoice = "";
     selectionZouter = selectionZinner = selectionZfortune = 0;
