@@ -39,7 +39,7 @@ const PARTIAL_OPEN = -1.5;
 
 function preload() {
   merriweather = loadFont('fonts/Merriweather-Regular.ttf');
-  paper = loadImage('textures/paper.jpg');
+  paper = loadImage('textures/paper2.jpg');
 }
 
 function setup() {
